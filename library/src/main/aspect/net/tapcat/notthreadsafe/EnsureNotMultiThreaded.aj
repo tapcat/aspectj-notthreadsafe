@@ -1,5 +1,6 @@
 package net.tapcat.notthreadsafe;
 
+import com.google.common.collect.MapMaker;
 import org.aspectj.lang.JoinPoint;
 import org.aspectj.lang.annotation.Aspect;
 import org.aspectj.lang.annotation.Before;
@@ -8,7 +9,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.Map;
-import java.util.concurrent.ConcurrentHashMap;
 
 /**
  * @author Maksim Zakharov
@@ -19,7 +19,13 @@ public class EnsureNotMultiThreaded {
 
     private static final Logger LOG = LoggerFactory.getLogger(EnsureNotMultiThreaded.class);
 
-    private final Map<Object, Thread> instanceThreads = new ConcurrentHashMap<Object, Thread>();
+    /**
+     * Using {@link com.google.common.collect.MapMaker#weakKeys()} results in using
+     * identity ({@code ==}) comparison to determine equality of keys.
+     * <p/>
+     * And it is exactly how we want to compare instances.
+     */
+    private final Map<Object, Thread> instanceThreads = new MapMaker().weakKeys().makeMap();
 
     @Pointcut("within(@javax.annotation.concurrent.NotThreadSafe *)")
     void annotatedWithNotThreadSafe() {
